@@ -7,21 +7,21 @@ import { useChefAuth } from '~/components/chat/ChefAuthWrapper';
 import { ContainerBootState, waitForBootStepCompleted } from '~/lib/stores/containerBootState';
 import { toast } from 'sonner';
 import { waitForConvexProjectConnection } from '~/lib/stores/convexProject';
-import { useAuth } from '@clerk/remix';
+import { useClerk } from '@clerk/remix';
 
 const CREATE_PROJECT_TIMEOUT = 15000;
 
 export function useHomepageInitializeChat(chatId: string, setChatInitialized: (chatInitialized: boolean) => void) {
   const convex = useConvex();
-  const auth = typeof window !== 'undefined' ? useAuth() : { signIn: null };
-  const signIn = auth?.signIn ?? null;
+  const clerk = typeof window !== 'undefined' ? useClerk() : null;
+  const openSignIn = clerk?.openSignIn ?? null;
   const chefAuthState = useChefAuth();
   const isFullyLoggedIn = chefAuthState.kind === 'fullyLoggedIn';
 
   return useCallback(async () => {
     if (!isFullyLoggedIn) {
-      if (signIn) {
-        signIn();
+      if (openSignIn) {
+        openSignIn();
       }
       return false;
     }
@@ -67,7 +67,7 @@ export function useHomepageInitializeChat(chatId: string, setChatInitialized: (c
     }
     await waitForBootStepCompleted(ContainerBootState.LOADING_SNAPSHOT);
     return true;
-  }, [convex, chatId, isFullyLoggedIn, setChatInitialized, signIn]);
+  }, [convex, chatId, isFullyLoggedIn, setChatInitialized, openSignIn]);
 }
 
 export function useExistingInitializeChat(chatId: string) {
