@@ -14,7 +14,6 @@ import { ClerkApp } from '@clerk/remix';
 import { rootAuthLoader } from '@clerk/remix/ssr.server';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { ConvexReactClient } from 'convex/react';
-import { useAuth } from '@clerk/remix';
 import globalStyles from './styles/index.css?url';
 import '@convex-dev/design-system/styles/shared.css';
 import xtermStyles from '@xterm/xterm/css/xterm.css?url';
@@ -85,6 +84,9 @@ export const Head = createHead(() => (
 ));
 
 function ClientConvexProvider({ children, convexUrl }: { children: React.ReactNode; convexUrl: string }) {
+  // Import useAuth INSIDE the component, not at module level
+  const { useAuth } = await import('@clerk/remix');
+  
   const [convex] = useState(
     () =>
       new ConvexReactClient(convexUrl, {
