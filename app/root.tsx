@@ -2,7 +2,7 @@ import { captureRemixErrorBoundaryError, captureMessage } from '@sentry/remix';
 import { useStore } from '@nanostores/react';
 import type { LinksFunction, LoaderFunctionArgs } from '@vercel/remix';
 import { json } from '@vercel/remix';
-import { Links, Meta, Outlet, Scripts, ScrollRestoration, useRouteLoaderData, useRouteError } from '@remix-run/react';
+import { Links, Meta, Outlet, Scripts, ScrollRestoration, useRouteLoaderData, useRouteError, useLoaderData } from '@remix-run/react';
 import { themeStore } from './lib/stores/theme';
 import { stripIndents } from 'chef-agent/utils/stripIndent';
 import { createHead } from 'remix-island';
@@ -25,15 +25,14 @@ import { ErrorDisplay } from './components/ErrorComponent';
 import useVersionNotificationBanner from './components/VersionNotificationBanner';
 
 export async function loader(args: LoaderFunctionArgs) {
-  const { data, headers } = await rootAuthLoader(args);
-  
-  const CONVEX_URL = process.env.VITE_CONVEX_URL || globalThis.process.env.CONVEX_URL!;
-  const CONVEX_OAUTH_CLIENT_ID = globalThis.process.env.CONVEX_OAUTH_CLIENT_ID!;
-  
-  return json({
-    ...data,
-    ENV: { CONVEX_URL, CONVEX_OAUTH_CLIENT_ID },
-  }, { headers });
+  return rootAuthLoader(args, ({ request }) => {
+    const CONVEX_URL = process.env.VITE_CONVEX_URL || globalThis.process.env.CONVEX_URL!;
+    const CONVEX_OAUTH_CLIENT_ID = globalThis.process.env.CONVEX_OAUTH_CLIENT_ID!;
+    
+    return json({
+      ENV: { CONVEX_URL, CONVEX_OAUTH_CLIENT_ID },
+    });
+  });
 }
 
 export const links: LinksFunction = () => [
@@ -99,6 +98,21 @@ function ClientConvexProvider({ children, convexUrl }: { children: React.ReactNo
   );
 }
 
+export function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <head>
+        <Head />
+      </head>
+      <body>
+        {children}
+        <ScrollRestoration />
+        <Scripts />
+      </body>
+    </html>
+  );
+}
+
 export const ErrorBoundary = () => {
   const error = useRouteError();
   captureRemixErrorBoundaryError(error);
@@ -107,8 +121,8 @@ export const ErrorBoundary = () => {
 
 function App() {
   const theme = useStore(themeStore);
-  const loaderData = useRouteLoaderData<typeof loader>('root');
-  const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || (loaderData as any)?.ENV.CONVEX_URL;
+  const loaderData = useLoaderData<typeof loader>();
+  const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || loaderData?.ENV?.CONVEX_URL;
   
   if (!CONVEX_URL) {
     throw new Error(`Missing CONVEX_URL: ${CONVEX_URL}`);
@@ -137,28 +151,18 @@ function App() {
   useVersionNotificationBanner();
 
   return (
-    <>
-      <DndProvider backend={HTML5Backend}>
-        <ClientOnly fallback={<div style={{ padding: '20px' }}>Loading...</div>}>
-          {() => (
-            <ClientConvexProvider convexUrl={CONVEX_URL}>
-              <Outlet />
-            </ClientConvexProvider>
-          )}
-        </ClientOnly>
-      </DndProvider>
-
-      <ScrollRestoration />
-      <Scripts />
-    </>
+    <DndProvider backend={HTML5Backend}>
+      <ClientOnly fallback={<div style={{ padding: '20px' }}>Loading...</div>}>
+        {() => (
+          <ClientConvexProvider convexUrl={CONVEX_URL}>
+            <Outlet />
+          </ClientConvexProvider>
+        )}
+      </ClientOnly>
+    </DndProvider>
   );
 }
 
 export default ClerkApp(App, {
   publishableKey: 'pk_test_ZnJ1ZS1zdGFnFnLTUxLmNsZXJrLmFjY291bnRzLmRldiQ',
 });
-
-// Remix requires this export but we don't use it directly
-export function Layout({ children }: { children: React.ReactNode }) {
-  return children;
-}
