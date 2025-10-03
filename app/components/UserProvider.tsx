@@ -18,7 +18,11 @@ export const UserProvider = withLDProvider<any>({
 
 function UserProviderInner({ children }: { children: React.ReactNode }) {
   const launchdarkly = useLDClient();
-  const { user } = useAuth();
+  
+  // Only call useAuth on the client side
+  const auth = typeof window !== 'undefined' ? useAuth() : { user: null };
+  const user = auth?.user ?? null;
+  
   const convexMemberId = useQuery(api.sessions.convexMemberId);
   const sessionId = useConvexSessionIdOrNullOrLoading();
   const chatId = useChatId();
@@ -48,7 +52,6 @@ function UserProviderInner({ children }: { children: React.ReactNode }) {
           username: user.firstName ? (user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName) : '',
           email: user.email ?? undefined,
         });
-
         // Get additional profile info from Convex
         try {
           const token = getConvexAuthToken(convex);
@@ -66,7 +69,7 @@ function UserProviderInner({ children }: { children: React.ReactNode }) {
           }
         } catch (error) {
           console.error('Failed to fetch Convex profile:', error);
-          // Fallback to WorkOS profile if Convex profile fetch fails
+          // Fallback to Clerk profile if Convex profile fetch fails
           setProfile({
             username: user.firstName ? (user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName) : '',
             email: user.email ?? '',
