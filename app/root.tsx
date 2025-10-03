@@ -99,7 +99,13 @@ function ClientConvexProvider({ children, convexUrl }: { children: React.ReactNo
   );
 }
 
-export function Layout({ children }: { children: React.ReactNode }) {
+export const ErrorBoundary = () => {
+  const error = useRouteError();
+  captureRemixErrorBoundaryError(error);
+  return <ErrorDisplay error={error} />;
+};
+
+function App() {
   const theme = useStore(themeStore);
   const loaderData = useRouteLoaderData<typeof loader>('root');
   const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || (loaderData as any)?.ENV.CONVEX_URL;
@@ -136,7 +142,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <ClientOnly fallback={<div style={{ padding: '20px' }}>Loading...</div>}>
           {() => (
             <ClientConvexProvider convexUrl={CONVEX_URL}>
-              {children}
+              <Outlet />
             </ClientConvexProvider>
           )}
         </ClientOnly>
@@ -148,20 +154,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const ErrorBoundary = () => {
-  const error = useRouteError();
-  captureRemixErrorBoundaryError(error);
-  return <ErrorDisplay error={error} />;
-};
-
-function App() {
-  return (
-    <Layout>
-      <Outlet />
-    </Layout>
-  );
-}
-
 export default ClerkApp(App, {
   publishableKey: 'pk_test_ZnJ1ZS1zdGFnFnLTUxLmNsZXJrLmFjY291bnRzLmRldiQ',
 });
+
+// Remix requires this export but we don't use it directly
+export function Layout({ children }: { children: React.ReactNode }) {
+  return children;
+}
