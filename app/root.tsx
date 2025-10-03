@@ -153,4 +153,6 @@ function App() {
   );
 }
 
-export default ClerkApp(App);
+export default ClerkApp(App, {
+  publishableKey: process.env.CLERK_PUBLISHABLE_KEY!,
+});
