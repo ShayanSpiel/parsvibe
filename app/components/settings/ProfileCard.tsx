@@ -71,5 +71,8 @@ function UserProviderInner({ children }: { children: React.ReactNode }) {
           console.error('Failed to fetch Convex profile:', error);
           // Fallback to Clerk profile if Convex profile fetch fails
           setProfile({
-            username: user.firstName ? (user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName) : '',
-            email:
+  username: user.firstName ? (user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName) : '',
+  email: convexProfile.email || userEmail || '', // If Convex profile email exists, use it, otherwise use userEmail, or an empty string if both are unavailable
+  avatar: user.imageUrl || '',
+  id: convexProfile.id || user.id || '',
+});
