@@ -9,6 +9,7 @@ import { createHead } from 'remix-island';
 import { useEffect, useState } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { ClientOnly } from 'remix-utils/client-only';
 import { ClerkApp } from '@clerk/remix';
 import { rootAuthLoader } from '@clerk/remix/ssr.server';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
@@ -83,6 +84,22 @@ export const Head = createHead(() => (
   </>
 ));
 
+function ClientConvexProvider({ children, convexUrl }: { children: React.ReactNode; convexUrl: string }) {
+  const [convex] = useState(
+    () =>
+      new ConvexReactClient(convexUrl, {
+        unsavedChangesWarning: false,
+        onServerDisconnectError: (message) => captureMessage(message),
+      })
+  );
+
+  return (
+    <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+      {children}
+    </ConvexProviderWithClerk>
+  );
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const theme = useStore(themeStore);
   const loaderData = useRouteLoaderData<typeof loader>('root');
@@ -91,17 +108,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   if (!CONVEX_URL) {
     throw new Error(`Missing CONVEX_URL: ${CONVEX_URL}`);
   }
-
-  const [convex] = useState(
-    () =>
-      new ConvexReactClient(
-        CONVEX_URL,
-        {
-          unsavedChangesWarning: false,
-          onServerDisconnectError: (message) => captureMessage(message),
-        },
-      ),
-  );
 
   useEffect(() => {
     document.querySelector('html')?.setAttribute('class', theme);
@@ -128,9 +134,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <DndProvider backend={HTML5Backend}>
-        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-          {children}
-        </ConvexProviderWithClerk>
+        <ClientOnly fallback={<div style={{ padding: '20px' }}>Loading...</div>}>
+          {() => (
+            <ClientConvexProvider convexUrl={CONVEX_URL}>
+              {children}
+            </ClientConvexProvider>
+          )}
+        </ClientOnly>
       </DndProvider>
 
       <ScrollRestoration />
