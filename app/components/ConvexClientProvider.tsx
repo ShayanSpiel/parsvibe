@@ -1,9 +1,7 @@
-import { useAuth } from '@clerk/remix';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { ConvexReactClient } from 'convex/react';
 import { ReactNode, useState } from 'react';
 import { captureMessage } from '@sentry/remix';
-import { useClerk } from '@clerk/remix';
 
 export function ConvexClientProvider({
   children,
@@ -12,8 +10,6 @@ export function ConvexClientProvider({
   children: ReactNode;
   convexUrl: string;
 }) {
-  const { loaded } = useClerk();
-  
   const [convex] = useState(
     () =>
       new ConvexReactClient(convexUrl, {
@@ -22,10 +18,8 @@ export function ConvexClientProvider({
       })
   );
 
-  // Don't render children until Clerk is fully loaded
-  if (!loaded) {
-    return <div>Loading...</div>;
-  }
+  // Import useAuth here to pass as reference
+  const { useAuth } = require('@clerk/remix');
 
   return (
     <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
