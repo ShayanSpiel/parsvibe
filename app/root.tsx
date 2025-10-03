@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { ClientOnly } from 'remix-utils/client-only';
-import { ClerkApp } from '@clerk/remix';
+import { ClerkApp, useAuth } from '@clerk/remix';
 import { rootAuthLoader } from '@clerk/remix/ssr.server';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { ConvexReactClient } from 'convex/react';
@@ -84,9 +84,6 @@ export const Head = createHead(() => (
 ));
 
 function ClientConvexProvider({ children, convexUrl }: { children: React.ReactNode; convexUrl: string }) {
-  // Import useAuth INSIDE the component, not at module level
-  const { useAuth } = await import('@clerk/remix');
-  
   const [convex] = useState(
     () =>
       new ConvexReactClient(convexUrl, {
