@@ -142,6 +142,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         clientId={import.meta.env.VITE_WORKOS_CLIENT_ID}
         redirectUri={import.meta.env.VITE_WORKOS_REDIRECT_URI}
         apiHostname={import.meta.env.VITE_WORKOS_API_HOSTNAME}
+        devMode={true}
       >
         <ClientOnly>
           {() => {
