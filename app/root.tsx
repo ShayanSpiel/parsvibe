@@ -154,5 +154,5 @@ function App() {
 }
 
 export default ClerkApp(App, {
-  publishableKey: process.env.CLERK_PUBLISHABLE_KEY!,
+  publishableKey: 'pk_test_ZnJ1ZS1zdGFnFnLTUxLmNsZXJrLmFjY291bnRzLmRldiQ',
 });
