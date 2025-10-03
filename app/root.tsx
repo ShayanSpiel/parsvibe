@@ -84,16 +84,6 @@ export const Head = createHead(() => (
   </>
 ));
 
-// NEW: Intermediate component that uses useAuth inside Clerk context
-function ConvexClientProvider({ children, convex }: { children: React.ReactNode; convex: ConvexReactClient }) {
-  const auth = useAuth();
-  return (
-    <ConvexProviderWithClerk client={convex} useAuth={auth}>
-      {children}
-    </ConvexProviderWithClerk>
-  );
-}
-
 export function Layout({ children }: { children: React.ReactNode }) {
   const theme = useStore(themeStore);
   const loaderData = useRouteLoaderData<typeof loader>('root');
@@ -138,15 +128,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <ClientOnly>
-        {() => (
-          <DndProvider backend={HTML5Backend}>
-            <ConvexClientProvider convex={convex}>
-              {children}
-            </ConvexClientProvider>
-          </DndProvider>
-        )}
-      </ClientOnly>
+      <DndProvider backend={HTML5Backend}>
+        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+          {children}
+        </ConvexProviderWithClerk>
+      </DndProvider>
 
       <ScrollRestoration />
       <Scripts />
