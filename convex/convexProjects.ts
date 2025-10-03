@@ -206,7 +206,7 @@ export const connectConvexProjectForOauth = internalAction({
           sessionId: args.sessionId,
           chatId: args.chatId,
           projectSlug: data.projectSlug,
-          teamSlug: args.teamSlug,
+          teamSlug: data.teamSlug,
           projectDeployKey: data.projectDeployKey,
           deploymentUrl: data.deploymentUrl,
           deploymentName: data.deploymentName,
@@ -242,6 +242,8 @@ async function _connectConvexProjectForMember(
   warningMessage: string | undefined;
 }> {
   const bigBrainHost = ensureEnvVar("BIG_BRAIN_HOST");
+  const teamToken = ensureEnvVar("CONVEX_TEAM_TOKEN");
+  
   let projectName: string | null = null;
   let timeElapsed = 0;
   // Project names get set via the first message from the LLM, so best effort
@@ -262,10 +264,10 @@ async function _connectConvexProjectForMember(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${args.accessToken}`,
+      Authorization: `Bearer ${teamToken}`,
     },
     body: JSON.stringify({
-      team: args.teamSlug,
+      team: "ShayanSpiel",
       projectName,
       deploymentType: "dev",
     }),
@@ -312,10 +314,10 @@ async function _connectConvexProjectForMember(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${args.accessToken}`,
+      Authorization: `Bearer ${teamToken}`,
     },
     body: JSON.stringify({
-      authn_token: args.accessToken,
+      authn_token: teamToken,
       projectId: data.projectId,
       oauthApp: {
         clientId: ensureEnvVar("CONVEX_OAUTH_CLIENT_ID"),
@@ -332,13 +334,13 @@ async function _connectConvexProjectForMember(
     });
   }
   const projectDeployKeyData: { accessToken: string } = await projectDeployKeyResponse.json();
-  const projectDeployKey = `project:${args.teamSlug}:${data.projectSlug}|${projectDeployKeyData.accessToken}`;
+  const projectDeployKey = `project:ShayanSpiel:${data.projectSlug}|${projectDeployKeyData.accessToken}`;
   const warningMessage =
     data.projectsRemaining <= 2 ? `You have ${data.projectsRemaining} projects remaining on this team.` : undefined;
 
   return {
     projectSlug: data.projectSlug,
-    teamSlug: args.teamSlug,
+    teamSlug: "ShayanSpiel",
     deploymentUrl: data.prodUrl,
     deploymentName: data.deploymentName,
     projectDeployKey,
