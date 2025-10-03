@@ -9,6 +9,7 @@ import { createHead } from 'remix-island';
 import { useEffect, useState } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { ClientOnly } from 'remix-utils/client-only';
 import { ClerkApp } from '@clerk/remix';
 import { rootAuthLoader } from '@clerk/remix/ssr.server';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
@@ -127,11 +128,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <DndProvider backend={HTML5Backend}>
-        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-          {children}
-        </ConvexProviderWithClerk>
-      </DndProvider>
+      <ClientOnly>
+        {() => (
+          <DndProvider backend={HTML5Backend}>
+            <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+              {children}
+            </ConvexProviderWithClerk>
+          </DndProvider>
+        )}
+      </ClientOnly>
 
       <ScrollRestoration />
       <Scripts />
