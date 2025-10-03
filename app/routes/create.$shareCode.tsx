@@ -16,7 +16,8 @@ import type { MetaFunction } from '@vercel/remix';
 import { Button } from '@ui/Button';
 import { ConvexError } from 'convex/values';
 import { Sheet } from '@ui/Sheet';
-import { useAuth } from '@clerk/remix';
+import { useClerk } from '@clerk/remix';
+
 export const meta: MetaFunction = () => {
   return [
     { title: 'Cooked with Chef' },
@@ -53,7 +54,8 @@ export default function ShareProject() {
 }
 
 function ShareProjectContent() {
-  const { signIn } = useAuth();
+  const clerk = typeof window !== 'undefined' ? useClerk() : null;
+  const openSignIn = clerk?.openSignIn;
   const { shareCode } = useParams();
 
   if (!shareCode) {
@@ -118,7 +120,9 @@ function ShareProjectContent() {
 
           <Button
             onClick={() => {
-              signIn();
+              if (openSignIn) {
+                openSignIn();
+              }
             }}
           >
             Sign in
