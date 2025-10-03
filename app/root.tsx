@@ -164,5 +164,5 @@ function App() {
 }
 
 export default ClerkApp(App, {
-  publishableKey: 'pk_test_ZnJ1ZS1zdGFnFnLTUxLmNsZXJrLmFjY291bnRzLmRldiQ',
+  publishableKey: 'pk_test_ZnJlZS1zdGFnLTUxLmNsZXJrLmFjY291bnRzLmRldiQ',
 });
