@@ -186,6 +186,9 @@ importers:
       '@webcontainer/snapshot':
         specifier: ^0.1.0
         version: 0.1.0
+      '@workos-inc/authkit-react':
+        specifier: ^0.13.0
+        version: 0.13.0(react@18.3.1)
       '@xterm/addon-fit':
         specifier: ^0.10.0
         version: 0.10.0(@xterm/xterm@5.5.0)
@@ -4482,6 +4485,14 @@ packages:
   '@webcontainer/snapshot@0.1.0':
     resolution: {integrity: sha512-PTIGQ3osUpTbK/dqB8RYbcZGv8IK+DJACx709z5sFbeIlngB3hUFpTEYFYs1SbUvr/AEQqvd0/bhc4ectrPRRw==}
     engines: {node: '>=16'}
+
+  '@workos-inc/authkit-js@0.14.0':
+    resolution: {integrity: sha512-Wt6rKoZdZnuAgiEBlvMDKhleU9DAwpyyy1SibacrnOWQgF4rcNlC+NTnHiiXu6OiOjQo6pPxhW42kCL+Gi+fjw==}
+
+  '@workos-inc/authkit-react@0.13.0':
+    resolution: {integrity: sha512-JhcPI9+I0MGOu7B33Gych76Xi7jKfKKfoZ4Mb6JPY9raeEqJQcnN4jMite2ynmMdmiZljIq7wkyf2WAsEU3SzQ==}
+    peerDependencies:
+      react: '>=17'
 
   '@xobotyi/scrollbar-width@1.9.5':
     resolution: {integrity: sha512-N8tkAACJx2ww8vFMneJmaAgmjAG1tnVBZJRLRcx061tmsLRZHSEZSLuGWnwPtunsSLvSqXQ2wfp7Mgqg1I+2dQ==}
@@ -13984,6 +13995,13 @@ snapshots:
   '@webcontainer/snapshot@0.1.0':
     dependencies:
       '@msgpack/msgpack': 3.1.1
+
+  '@workos-inc/authkit-js@0.14.0': {}
+
+  '@workos-inc/authkit-react@0.13.0(react@18.3.1)':
+    dependencies:
+      '@workos-inc/authkit-js': 0.14.0
+      react: 18.3.1
 
   '@xobotyi/scrollbar-width@1.9.5': {}
 
