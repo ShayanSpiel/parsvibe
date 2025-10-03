@@ -2,15 +2,16 @@ import { useStore } from '@nanostores/react';
 import { profileStore } from '~/lib/stores/profile';
 import { ExitIcon, ExternalLinkIcon, PersonIcon } from '@radix-ui/react-icons';
 import { LoadingTransition } from '@ui/Loading';
-import { useAuth } from '@workos-inc/authkit-react';
+import { useClerk } from '@clerk/remix';
 
 export function ProfileCard() {
   const profile = useStore(profileStore);
-  const { signOut } = useAuth();
+  const { signOut } = useClerk();
+  
   const handleLogout = () => {
-    signOut({ returnTo: window.location.origin });
+    signOut({ redirectUrl: window.location.origin });
   };
-
+  
   return (
     <LoadingTransition loadingProps={{ className: 'h-[12.375rem]' }}>
       {profile && (
@@ -31,7 +32,7 @@ export function ProfileCard() {
                 <h3 className="text-lg font-medium text-content-primary">{profile.username}</h3>
                 {profile.email && <p className="text-sm text-content-secondary">{profile.email}</p>}
                 <div className="mt-2 flex flex-col gap-2">
-                  <a
+                  
                     href="https://dashboard.convex.dev/profile"
                     target="_blank"
                     rel="noopener noreferrer"
