@@ -9,7 +9,6 @@ import { createHead } from 'remix-island';
 import { useEffect, useState } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { ClientOnly } from 'remix-utils/client-only';
 import { ClerkApp } from '@clerk/remix';
 import { rootAuthLoader } from '@clerk/remix/ssr.server';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
@@ -109,20 +108,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   useEffect(() => {
-    if (window.location.pathname.startsWith('/admin/')) {
-      return;
-    }
-    const key = import.meta.env.VITE_POSTHOG_KEY || '';
-    const apiHost = import.meta.env.VITE_POSTHOG_HOST || '';
+    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/admin/')) {
+      const key = import.meta.env.VITE_POSTHOG_KEY || '';
+      const apiHost = import.meta.env.VITE_POSTHOG_HOST || '';
 
-    posthog.init(key, {
-      api_host: apiHost,
-      ui_host: 'https://us.posthog.com/',
-      debug: false,
-      enable_recording_console_log: false,
-      capture_pageview: true,
-      persistence: 'memory',
-    });
+      posthog.init(key, {
+        api_host: apiHost,
+        ui_host: 'https://us.posthog.com/',
+        debug: false,
+        enable_recording_console_log: false,
+        capture_pageview: true,
+        persistence: 'memory',
+      });
+    }
   }, []);
 
   useVersionNotificationBanner();
@@ -134,12 +132,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {children}
         </ConvexProviderWithClerk>
       </DndProvider>
-
-      <ScrollRestoration />
-      <Scripts />
-    </>
-  );
-      </ClientOnly>
 
       <ScrollRestoration />
       <Scripts />
