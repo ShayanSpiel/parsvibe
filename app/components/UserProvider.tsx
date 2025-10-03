@@ -7,7 +7,7 @@ import { setProfile } from '~/lib/stores/profile';
 import { getConvexProfile } from '~/lib/convexProfile';
 import { useLDClient, withLDProvider, basicLogger } from 'launchdarkly-react-client-sdk';
 import { api } from '@convex/_generated/api';
-import { useAuth } from '@clerk/remix';
+import { useUser } from '@clerk/remix';
 
 export const UserProvider = withLDProvider<any>({
   clientSideID: import.meta.env.VITE_LD_CLIENT_SIDE_ID,
@@ -19,9 +19,9 @@ export const UserProvider = withLDProvider<any>({
 function UserProviderInner({ children }: { children: React.ReactNode }) {
   const launchdarkly = useLDClient();
   
-  // Only call useAuth on the client side
-  const auth = typeof window !== 'undefined' ? useAuth() : { user: null };
-  const user = auth?.user ?? null;
+  // Use useUser instead of useAuth to get the user object
+  const userHook = typeof window !== 'undefined' ? useUser() : { user: null };
+  const user = userHook?.user ?? null;
   
   const convexMemberId = useQuery(api.sessions.convexMemberId);
   const sessionId = useConvexSessionIdOrNullOrLoading();
@@ -45,14 +45,13 @@ function UserProviderInner({ children }: { children: React.ReactNode }) {
       if (user) {
         launchdarkly?.identify({
           key: convexMemberId ?? '',
-          email: user.email ?? '',
+          email: user.primaryEmailAddress?.emailAddress ?? '',
         });
         setUser({
           id: convexMemberId ?? '',
           username: user.firstName ? (user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName) : '',
-          email: user.email ?? undefined,
+          email: user.primaryEmailAddress?.emailAddress ?? undefined,
         });
-        // Get additional profile info from Convex
         try {
           const token = getConvexAuthToken(convex);
           if (token) {
@@ -62,18 +61,17 @@ function UserProviderInner({ children }: { children: React.ReactNode }) {
               username:
                 convexProfile.name ??
                 (user.firstName ? (user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName) : ''),
-              email: convexProfile.email || user.email || '',
-              avatar: user.profilePictureUrl || '',
+              email: convexProfile.email || user.primaryEmailAddress?.emailAddress || '',
+              avatar: user.imageUrl || '',
               id: convexProfile.id || user.id || '',
             });
           }
         } catch (error) {
           console.error('Failed to fetch Convex profile:', error);
-          // Fallback to Clerk profile if Convex profile fetch fails
           setProfile({
             username: user.firstName ? (user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName) : '',
-            email: user.email ?? '',
-            avatar: user.profilePictureUrl ?? '',
+            email: user.primaryEmailAddress?.emailAddress ?? '',
+            avatar: user.imageUrl ?? '',
             id: user.id ?? '',
           });
         }
@@ -84,7 +82,6 @@ function UserProviderInner({ children }: { children: React.ReactNode }) {
       }
     }
     void updateProfile();
-    // Including tokenValue is important here even though it's not a direct dependency
   }, [launchdarkly, user, convex, tokenValue, convexMemberId]);
 
   return children;
