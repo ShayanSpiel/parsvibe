@@ -467,7 +467,7 @@ const HighlightBlocks = memo(function HighlightBlocks({
   const mirrorRef = useRef<HTMLDivElement>(null);
   const [forceRerender, setForceRerender] = useState(0);
 
-  const [blockPositions, setBlockPositions] = useState
+  const [blockPositions, setBlockPositions] = useState <
     {
       top: number;
       left: number;
