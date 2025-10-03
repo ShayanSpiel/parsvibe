@@ -72,7 +72,16 @@ function UserProviderInner({ children }: { children: React.ReactNode }) {
           // Fallback to Clerk profile if Convex profile fetch fails
           setProfile({
             username: user.firstName ? (user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName) : '',
-            email: convexProfile.email || userEmail || '', // If Convex profile email exists, use it, otherwise use userEmail, or an empty string if both are unavailable
+            email: userEmail || '', // fallback to userEmail
             avatar: user.imageUrl || '',
-            id: convexProfile.id || user.id || '',
-        });
+            id: user.id || '', // Fallback to user.id
+          });
+        }
+      }
+    }
+
+    updateProfile();
+  }, [user, convexMemberId, convex, chatId, sessionId]);
+
+  return <>{children}</>;
+}
