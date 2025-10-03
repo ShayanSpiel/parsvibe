@@ -36,7 +36,7 @@ import { captureException } from '@sentry/remix';
 import { Menu as MenuComponent, MenuItem as MenuItemComponent } from '@ui/Menu';
 import { PencilSquareIcon } from '@heroicons/react/24/outline';
 import { ChatBubbleLeftIcon, DocumentArrowUpIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
-import { useAuth } from '@workos-inc/authkit-react';
+import { useClerk } from '@clerk/remix';
 import { useConvex } from 'convex/react';
 
 const PROMPT_LENGTH_WARNING_THRESHOLD = 2000;
@@ -65,7 +65,7 @@ const HIGHLIGHTS: Highlight[] = [
     text: 'upload',
     tooltip: (
       <>
-        Chef will use Convex’s built-in{' '}
+        Chef will use Convex's built-in{' '}
         <TooltipLink href="https://docs.convex.dev/file-storage">file upload capabilities</TooltipLink>.
       </>
     ),
@@ -74,7 +74,7 @@ const HIGHLIGHTS: Highlight[] = [
     text: 'full text search',
     tooltip: (
       <>
-        Chef will use Convex’s built-in{' '}
+        Chef will use Convex's built-in{' '}
         <TooltipLink href="https://docs.convex.dev/search/text-search">full text search</TooltipLink> capabilities.
       </>
     ),
@@ -417,7 +417,7 @@ const TextareaWithHighlights = memo(function TextareaWithHighlights({
 
   const blocks = useMemo(() => {
     const pattern = highlights
-      .map((h) => h.text) // we assume text doesn’t contain special characters
+      .map((h) => h.text) // we assume text doesn't contain special characters
       .join('|');
     const regex = new RegExp(pattern, 'gi');
 
@@ -473,7 +473,7 @@ const HighlightBlocks = memo(function HighlightBlocks({
   const mirrorRef = useRef<HTMLDivElement>(null);
   const [forceRerender, setForceRerender] = useState(0);
 
-  const [blockPositions, setBlockPositions] = useState<
+  const [blockPositions, setBlockPositions] = useState
     {
       top: number;
       left: number;
@@ -605,13 +605,13 @@ const CharacterWarning = memo(function CharacterWarning() {
 });
 
 const SignInButton = memo(function SignInButton() {
-  const { signIn } = useAuth();
+  const { openSignIn } = useClerk();
 
   return (
     <Button
       variant="neutral"
       onClick={() => {
-        void signIn();
+        void openSignIn();
       }}
       size="xs"
       className="text-xs font-normal"
