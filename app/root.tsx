@@ -9,10 +9,11 @@ import { createHead } from 'remix-island';
 import { useEffect, useState } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { ClientOnly } from 'remix-utils/client-only';
 import { ClerkApp } from '@clerk/remix';
 import { rootAuthLoader } from '@clerk/remix/ssr.server';
-import { ConvexClientProvider } from './components/ConvexClientProvider';
+import { ConvexProviderWithClerk } from 'convex/react-clerk';
+import { ConvexReactClient } from 'convex/react';
+import { useAuth } from '@clerk/remix';
 import globalStyles from './styles/index.css?url';
 import '@convex-dev/design-system/styles/shared.css';
 import xtermStyles from '@xterm/xterm/css/xterm.css?url';
@@ -91,6 +92,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
     throw new Error(`Missing CONVEX_URL: ${CONVEX_URL}`);
   }
 
+  const [convex] = useState(
+    () =>
+      new ConvexReactClient(
+        CONVEX_URL,
+        {
+          unsavedChangesWarning: false,
+          onServerDisconnectError: (message) => captureMessage(message),
+        },
+      ),
+  );
+
   useEffect(() => {
     document.querySelector('html')?.setAttribute('class', theme);
   }, [theme]);
@@ -115,15 +127,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <ClientOnly fallback={<div>Loading...</div>}>
-        {() => (
-          <DndProvider backend={HTML5Backend}>
-            <ConvexClientProvider convexUrl={CONVEX_URL}>
-              {children}
-            </ConvexClientProvider>
-          </DndProvider>
-        )}
-      </ClientOnly>
+      <DndProvider backend={HTML5Backend}>
+        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+          {children}
+        </ConvexProviderWithClerk>
+      </DndProvider>
 
       <ScrollRestoration />
       <Scripts />
@@ -145,6 +153,4 @@ function App() {
   );
 }
 
-export default ClerkApp(App, {
-  publishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY!,
-});
+export default ClerkApp(App);
