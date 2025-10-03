@@ -42,7 +42,7 @@ import { useConvex } from 'convex/react';
 const PROMPT_LENGTH_WARNING_THRESHOLD = 2000;
 
 type Highlight = {
-  text: string; // must be lowercase
+  text: string;
   tooltip: ReactNode;
 };
 
@@ -121,13 +121,11 @@ export const MessageInput = memo(function MessageInput({
 
   const input = useStore(messageInputStore);
 
-  // Set the initial input value
   const [searchParams] = useSearchParams();
   useEffect(() => {
     messageInputStore.set(searchParams.get('prefill') || Cookies.get(PROMPT_COOKIE_KEY) || '');
   }, [searchParams]);
 
-  // Send messages
   const handleSend = useCallback(async () => {
     const trimmedInput = input.trim();
     if (trimmedInput.length === 0) {
@@ -164,7 +162,6 @@ export const MessageInput = memo(function MessageInput({
           return;
         }
 
-        // ignore if using input method engine
         if (event.nativeEvent.isComposing) {
           return;
         }
@@ -226,7 +223,6 @@ export const MessageInput = memo(function MessageInput({
     }
   }, [input, convex, selectedTeamSlug]);
 
-  // Helper to insert template and select '[...]'
   const insertTemplate = useCallback(
     (template: string) => {
       let newValue;
@@ -406,7 +402,6 @@ const TextareaWithHighlights = memo(function TextareaWithHighlights({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Textarea auto-sizing
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -417,7 +412,7 @@ const TextareaWithHighlights = memo(function TextareaWithHighlights({
 
   const blocks = useMemo(() => {
     const pattern = highlights
-      .map((h) => h.text) // we assume text doesn't contain special characters
+      .map((h) => h.text)
       .join('|');
     const regex = new RegExp(pattern, 'gi');
 
@@ -448,7 +443,6 @@ const TextareaWithHighlights = memo(function TextareaWithHighlights({
         style={{ minHeight }}
         placeholder={placeholder}
         translate="no"
-        // Disable Grammarly
         data-gramm="false"
       />
 
@@ -483,7 +477,6 @@ const HighlightBlocks = memo(function HighlightBlocks({
     }[]
   >([]);
 
-  // Rerender on textarea resize
   useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) {
@@ -605,13 +598,16 @@ const CharacterWarning = memo(function CharacterWarning() {
 });
 
 const SignInButton = memo(function SignInButton() {
-  const { openSignIn } = useClerk();
+  const clerk = typeof window !== 'undefined' ? useClerk() : null;
+  const openSignIn = clerk?.openSignIn;
 
   return (
     <Button
       variant="neutral"
       onClick={() => {
-        void openSignIn();
+        if (openSignIn) {
+          void openSignIn();
+        }
       }}
       size="xs"
       className="text-xs font-normal"
@@ -624,10 +620,6 @@ const SignInButton = memo(function SignInButton() {
   );
 });
 
-/**
- * Debounced function to cache the prompt in cookies.
- * Caches the trimmed value of the textarea input after a delay to optimize performance.
- */
 const cachePrompt = debounce(function cachePrompt(prompt: string) {
   Cookies.set(PROMPT_COOKIE_KEY, prompt.trim(), { expires: 30 });
 }, 1000);
