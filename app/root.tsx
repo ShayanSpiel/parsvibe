@@ -1,6 +1,6 @@
 import { captureRemixErrorBoundaryError, captureMessage } from '@sentry/remix';
 import { useStore } from '@nanostores/react';
-import type { LinksFunction } from '@vercel/remix';
+import type { LinksFunction, LoaderFunctionArgs } from '@vercel/remix';
 import { json } from '@vercel/remix';
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, useRouteLoaderData, useRouteError } from '@remix-run/react';
 import { themeStore } from './lib/stores/theme';
@@ -10,9 +10,11 @@ import { useEffect, useState } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { ClientOnly } from 'remix-utils/client-only';
-import { ClerkProvider } from '@clerk/remix';
-import { ConvexProvider } from 'convex/react';
+import { ClerkApp } from '@clerk/remix';
+import { rootAuthLoader } from '@clerk/remix/ssr.server';
+import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { ConvexReactClient } from 'convex/react';
+import { useAuth } from '@clerk/remix';
 import globalStyles from './styles/index.css?url';
 import '@convex-dev/design-system/styles/shared.css';
 import xtermStyles from '@xterm/xterm/css/xterm.css?url';
@@ -23,14 +25,16 @@ import 'allotment/dist/style.css';
 import { ErrorDisplay } from './components/ErrorComponent';
 import useVersionNotificationBanner from './components/VersionNotificationBanner';
 
-export async function loader() {
-  // These environment variables are available in the client (they aren't secret).
-  // eslint-disable-next-line local/no-direct-process-env
+export async function loader(args: LoaderFunctionArgs) {
+  const { data, headers } = await rootAuthLoader(args);
+  
   const CONVEX_URL = process.env.VITE_CONVEX_URL || globalThis.process.env.CONVEX_URL!;
   const CONVEX_OAUTH_CLIENT_ID = globalThis.process.env.CONVEX_OAUTH_CLIENT_ID!;
+  
   return json({
+    ...data,
     ENV: { CONVEX_URL, CONVEX_OAUTH_CLIENT_ID },
-  });
+  }, { headers });
 }
 
 export const links: LinksFunction = () => [
@@ -84,6 +88,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const theme = useStore(themeStore);
   const loaderData = useRouteLoaderData<typeof loader>('root');
   const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || (loaderData as any)?.ENV.CONVEX_URL;
+  
   if (!CONVEX_URL) {
     throw new Error(`Missing CONVEX_URL: ${CONVEX_URL}`);
   }
@@ -103,7 +108,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
     document.querySelector('html')?.setAttribute('class', theme);
   }, [theme]);
 
-  // Initialize PostHog.
   useEffect(() => {
     if (window.location.pathname.startsWith('/admin/')) {
       return;
@@ -125,21 +129,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <ClerkProvider
-        publishableKey={import.meta.env.CLERK_PUBLISHABLE_KEY!}
-      >
-        <ClientOnly>
-          {() => {
-            return (
-              <DndProvider backend={HTML5Backend}>
-                <ConvexProvider client={convex}>
-                  {children}
-                </ConvexProvider>
-              </DndProvider>
-            );
-          }}
-        </ClientOnly>
-      </ClerkProvider>
+      <ClientOnly>
+        {() => {
+          return (
+            <DndProvider backend={HTML5Backend}>
+              <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+                {children}
+              </ConvexProviderWithClerk>
+            </DndProvider>
+          );
+        }}
+      </ClientOnly>
 
       <ScrollRestoration />
       <Scripts />
@@ -153,10 +153,14 @@ export const ErrorBoundary = () => {
   return <ErrorDisplay error={error} />;
 };
 
-export default function App() {
+function App() {
   return (
     <Layout>
       <Outlet />
     </Layout>
   );
 }
+
+export default ClerkApp(App, {
+  publishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY!,
+});
