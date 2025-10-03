@@ -129,16 +129,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <ClientOnly>
-        {() => {
-          return (
-            <DndProvider backend={HTML5Backend}>
-              <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-                {children}
-              </ConvexProviderWithClerk>
-            </DndProvider>
-          );
-        }}
+      <DndProvider backend={HTML5Backend}>
+        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+          {children}
+        </ConvexProviderWithClerk>
+      </DndProvider>
+
+      <ScrollRestoration />
+      <Scripts />
+    </>
+  );
       </ClientOnly>
 
       <ScrollRestoration />
