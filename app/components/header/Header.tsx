@@ -32,7 +32,10 @@ export function Header({ hideSidebarIcon = false }: { hideSidebarIcon?: boolean 
   const showSidebarIcon = !hideSidebarIcon && isLoggedIn;
 
   const profile = useStore(profileStore);
-  const { signOut } = useClerk();
+  
+  // Only call useClerk on the client side to avoid SSR issues
+  const clerk = typeof window !== 'undefined' ? useClerk() : null;
+  const signOut = clerk?.signOut;
 
   const teamSlug = useSelectedTeamSlug();
   const { isPaidPlan } = useUsage({ teamSlug });
@@ -41,7 +44,9 @@ export function Header({ hideSidebarIcon = false }: { hideSidebarIcon?: boolean 
   const handleLogout = () => {
     setProfile(null);
     window.localStorage.removeItem(SESSION_ID_KEY);
-    signOut({ redirectUrl: window.location.origin });
+    if (signOut) {
+      signOut({ redirectUrl: window.location.origin });
+    }
   };
 
   const handleSettingsClick = () => {
@@ -66,7 +71,7 @@ export function Header({ hideSidebarIcon = false }: { hideSidebarIcon?: boolean 
           <img src="/chef.svg" alt="Chef logo" width={72} height={42} className="relative -top-1" />
         </a>
         
-        <a
+        
           href="https://github.com/get-convex/chef"
           target="_blank"
           rel="noopener noreferrer"
