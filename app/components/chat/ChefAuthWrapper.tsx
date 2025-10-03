@@ -1,10 +1,7 @@
 import { useConvex } from 'convex/react';
-
 import { useConvexAuth } from 'convex/react';
 import { createContext, useContext, useEffect, useRef } from 'react';
-
 import { sessionIdStore } from '~/lib/stores/sessionId';
-
 import { useConvexSessionIdOrNullOrLoading } from '~/lib/stores/sessionId';
 import type { Id } from '@convex/_generated/dataModel';
 import { useLocalStorage } from '@uidotdev/usehooks';
@@ -12,7 +9,7 @@ import { api } from '@convex/_generated/api';
 import { toast } from 'sonner';
 import { fetchOptIns } from '~/lib/convexOptins';
 import { setChefDebugProperty } from 'chef-agent/utils/chefDebug';
-import { useAuth } from '@workos-inc/authkit-react';
+
 type ChefAuthState =
   | {
       kind: 'loading';
@@ -62,8 +59,6 @@ export const ChefAuthProvider = ({
     null,
   );
   const hasAlertedAboutOptIns = useRef(false);
-  const authRetries = useRef(0);
-  const { getAccessToken } = useAuth();
 
   useEffect(() => {
     function setSessionId(sessionId: Id<'sessions'> | null) {
@@ -85,27 +80,10 @@ export const ChefAuthProvider = ({
       setSessionId(null);
       return undefined;
     }
-    let verifySessionTimeout: ReturnType<typeof setTimeout> | null = null;
 
     async function verifySession() {
       if (sessionIdFromLocalStorage) {
-        // Seems like auth might not automatically refresh its state, so call this to kick it
-        try {
-          // Call this to prove that WorkOS is set up
-          await getAccessToken({});
-          authRetries.current = 0;
-        } catch (_e) {
-          console.error('Unable to fetch access token from WorkOS');
-          if (authRetries.current < 3 && verifySessionTimeout === null) {
-            authRetries.current++;
-            verifySessionTimeout = setTimeout(() => {
-              void verifySession();
-            }, 1000);
-          }
-          return;
-        }
         if (!isAuthenticated) {
-          // Wait until auth is propagated to Convex before we try to verify the session
           return;
         }
         let isValid: boolean = false;
@@ -131,8 +109,6 @@ export const ChefAuthProvider = ({
             toast.error('Unexpected error setting up your account.');
           }
         } else {
-          // Clear it, the next loop around we'll try creating a new session
-          // if we're authenticated.
           setSessionId(null);
         }
       }
@@ -150,11 +126,6 @@ export const ChefAuthProvider = ({
     }
 
     void verifySession();
-    return () => {
-      if (verifySessionTimeout) {
-        clearTimeout(verifySessionTimeout);
-      }
-    };
   }, [
     convex,
     sessionId,
@@ -162,7 +133,6 @@ export const ChefAuthProvider = ({
     isConvexAuthLoading,
     sessionIdFromLocalStorage,
     setSessionIdFromLocalStorage,
-    getAccessToken,
   ]);
 
   const isLoading = sessionId === undefined || isConvexAuthLoading;
@@ -175,7 +145,6 @@ export const ChefAuthProvider = ({
 
   if (redirectIfUnauthenticated && state.kind === 'unauthenticated') {
     console.log('redirecting to /');
-    // Hard navigate to avoid any potential state leakage
     window.location.href = '/';
   }
 
