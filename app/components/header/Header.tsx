@@ -21,7 +21,7 @@ import { useSelectedTeamSlug } from '~/lib/stores/convexTeams';
 import { useUsage } from '~/lib/stores/usage';
 import { useReferralStats } from '~/lib/hooks/useReferralCode';
 import { Menu } from '~/components/sidebar/Menu.client';
-import { useAuth } from '@workos-inc/authkit-react';
+import { useClerk } from '@clerk/remix';
 
 export function Header({ hideSidebarIcon = false }: { hideSidebarIcon?: boolean }) {
   const chat = useStore(chatStore);
@@ -32,7 +32,7 @@ export function Header({ hideSidebarIcon = false }: { hideSidebarIcon?: boolean 
   const showSidebarIcon = !hideSidebarIcon && isLoggedIn;
 
   const profile = useStore(profileStore);
-  const { signOut } = useAuth();
+  const { signOut } = useClerk();
 
   const teamSlug = useSelectedTeamSlug();
   const { isPaidPlan } = useUsage({ teamSlug });
@@ -41,7 +41,7 @@ export function Header({ hideSidebarIcon = false }: { hideSidebarIcon?: boolean 
   const handleLogout = () => {
     setProfile(null);
     window.localStorage.removeItem(SESSION_ID_KEY);
-    signOut({ returnTo: window.location.origin });
+    signOut({ redirectUrl: window.location.origin });
   };
 
   const handleSettingsClick = () => {
@@ -65,7 +65,7 @@ export function Header({ hideSidebarIcon = false }: { hideSidebarIcon?: boolean 
           {/* The logo is shifted up slightly, to visually align it with the hamburger icon. */}
           <img src="/chef.svg" alt="Chef logo" width={72} height={42} className="relative -top-1" />
         </a>
-        <a
+        
           href="https://github.com/get-convex/chef"
           target="_blank"
           rel="noopener noreferrer"
