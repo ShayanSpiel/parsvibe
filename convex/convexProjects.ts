@@ -122,17 +122,11 @@ export async function startProvisionConvexProjectHelper(
   if (session.memberId === undefined) {
     throw new ConvexError({ code: "NotAuthorized", message: "Must be logged in to connect a project" });
   }
-  // OAuth flow
-  if (args.projectInitParams === undefined) {
-    console.error(`Must provide projectInitParams for oauth: ${args.sessionId}`);
-    throw new ConvexError({ code: "NotAuthorized", message: "Invalid flow for connecting a project" });
-  }
 
-  await ctx.scheduler.runAfter(0, internal.convexProjects.connectConvexProjectForOauth, {
+  // Use single-team flow (no longer need projectInitParams)
+  await ctx.scheduler.runAfter(0, internal.convexProjects.connectConvexProjectForTeam, {
     sessionId: args.sessionId,
     chatId: args.chatId,
-    accessToken: args.projectInitParams.workosAccessToken,
-    teamSlug: args.projectInitParams.teamSlug,
   });
   const jobId = await ctx.scheduler.runAfter(CHECK_CONNECTION_DEADLINE_MS, internal.convexProjects.checkConnection, {
     sessionId: args.sessionId,
@@ -154,7 +148,7 @@ export const recordProvisionedConvexProjectCredentials = internalMutation({
     warningMessage: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const teamSlug = args.teamSlug ?? "demo-team";
+    const teamSlug = args.teamSlug ?? "ShayanSpiel";
     await ctx.db.insert("convexProjectCredentials", {
       projectSlug: args.projectSlug,
       teamSlug,
@@ -187,19 +181,16 @@ export const recordProvisionedConvexProjectCredentials = internalMutation({
 const TOTAL_WAIT_TIME_MS = 5000;
 const WAIT_TIME_MS = 500;
 
-export const connectConvexProjectForOauth = internalAction({
+// Renamed from connectConvexProjectForOauth to connectConvexProjectForTeam
+export const connectConvexProjectForTeam = internalAction({
   args: {
     sessionId: v.id("sessions"),
     chatId: v.string(),
-    accessToken: v.string(),
-    teamSlug: v.string(),
   },
   handler: async (ctx, args) => {
     await _connectConvexProjectForMember(ctx, {
       sessionId: args.sessionId,
       chatId: args.chatId,
-      accessToken: args.accessToken,
-      teamSlug: args.teamSlug,
     })
       .then(async (data) => {
         await ctx.runMutation(internal.convexProjects.recordProvisionedConvexProjectCredentials, {
@@ -230,8 +221,6 @@ async function _connectConvexProjectForMember(
   args: {
     sessionId: Id<"sessions">;
     chatId: string;
-    accessToken: string;
-    teamSlug: string;
   },
 ): Promise<{
   projectSlug: string;
@@ -246,8 +235,6 @@ async function _connectConvexProjectForMember(
   
   let projectName: string | null = null;
   let timeElapsed = 0;
-  // Project names get set via the first message from the LLM, so best effort
-  // get the name and use it to create the project.
   while (timeElapsed < TOTAL_WAIT_TIME_MS) {
     projectName = await ctx.runQuery(internal.convexProjects.getProjectName, {
       sessionId: args.sessionId,
@@ -260,6 +247,7 @@ async function _connectConvexProjectForMember(
     timeElapsed += WAIT_TIME_MS;
   }
   projectName = projectName ?? "My Project (Chef)";
+  
   const response = await fetch(`${bigBrainHost}/api/create_project`, {
     method: "POST",
     headers: {
@@ -272,6 +260,7 @@ async function _connectConvexProjectForMember(
       deploymentType: "dev",
     }),
   });
+  
   if (!response.ok) {
     const text = await response.text();
     const defaultProvisioningError = new ConvexError({
@@ -289,7 +278,6 @@ async function _connectConvexProjectForMember(
       throw defaultProvisioningError;
     }
 
-    // Special case this error since it's probably semi-common
     if (data !== null && data.code === "ProjectQuotaReached" && typeof data.message === "string") {
       throw new ConvexError({
         code: "ProvisioningError",
@@ -299,42 +287,20 @@ async function _connectConvexProjectForMember(
     }
     throw defaultProvisioningError;
   }
+  
   const data: {
     projectSlug: string;
     projectId: number;
     teamSlug: string;
     deploymentName: string;
-    // This is in fact the dev URL
     prodUrl: string;
     adminKey: string;
     projectsRemaining: number;
   } = await response.json();
 
-  const projectDeployKeyResponse = await fetch(`${bigBrainHost}/api/dashboard/authorize`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${teamToken}`,
-    },
-    body: JSON.stringify({
-      authn_token: teamToken,
-      projectId: data.projectId,
-      oauthApp: {
-        clientId: ensureEnvVar("CONVEX_OAUTH_CLIENT_ID"),
-        clientSecret: ensureEnvVar("CONVEX_OAUTH_CLIENT_SECRET"),
-      },
-    }),
-  });
-  if (!projectDeployKeyResponse.ok) {
-    const text = await projectDeployKeyResponse.text();
-    throw new ConvexError({
-      code: "ProvisioningError",
-      message: `Failed to create project deploy key: ${projectDeployKeyResponse.status}`,
-      details: text,
-    });
-  }
-  const projectDeployKeyData: { accessToken: string } = await projectDeployKeyResponse.json();
-  const projectDeployKey = `project:ShayanSpiel:${data.projectSlug}|${projectDeployKeyData.accessToken}`;
+  // KEY CHANGE: Use the adminKey directly instead of OAuth authorization
+  const projectDeployKey = data.adminKey;
+  
   const warningMessage =
     data.projectsRemaining <= 2 ? `You have ${data.projectsRemaining} projects remaining on this team.` : undefined;
 
