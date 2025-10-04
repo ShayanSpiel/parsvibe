@@ -259,8 +259,7 @@ export const updateCachedProfile = action({
       id: clerkProfile.subject || "",
     };
 
-    await ctx.runMutation(internal.members.upsertMemberProfile, {
-      subject: clerkProfile.subject,
+    await ctx.runMutation(internal.sessions.saveCachedProfile, {
       profile,
     });
   },
