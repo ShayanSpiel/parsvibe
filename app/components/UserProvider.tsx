@@ -4,7 +4,6 @@ import { useConvex, useQuery } from 'convex/react';
 import { useConvexSessionIdOrNullOrLoading, getConvexAuthToken } from '~/lib/stores/sessionId';
 import { useChatId } from '~/lib/stores/chatId';
 import { setProfile } from '~/lib/stores/profile';
-import { getConvexProfile } from '~/lib/convexProfile';
 import { useLDClient, withLDProvider, basicLogger } from 'launchdarkly-react-client-sdk';
 import { api } from '@convex/_generated/api';
 import { useUser } from '@clerk/remix';
@@ -47,34 +46,30 @@ function UserProviderInner({ children }: { children: React.ReactNode }) {
           key: convexMemberId ?? '',
           email: user.primaryEmailAddress?.emailAddress ?? '',
         });
+
         setUser({
           id: convexMemberId ?? '',
           username: user.firstName ? (user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName) : '',
           email: user.primaryEmailAddress?.emailAddress ?? undefined,
         });
-        try {
-          const token = getConvexAuthToken(convex);
-          if (token) {
-            void convex.action(api.sessions.updateCachedProfile, { convexAuthToken: token });
-            const convexProfile = await getConvexProfile(token);
-            setProfile({
-              username:
-                convexProfile.name ??
-                (user.firstName ? (user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName) : ''),
-              email: convexProfile.email || user.primaryEmailAddress?.emailAddress || '',
-              avatar: user.imageUrl || '',
-              id: convexProfile.id || user.id || '',
-            });
+
+        // Update profile using Clerk data directly - no external API call needed
+        const token = getConvexAuthToken(convex);
+        if (token) {
+          try {
+            await convex.action(api.sessions.updateCachedProfile, { convexAuthToken: token });
+          } catch (error) {
+            console.error('Failed to update cached profile:', error);
           }
-        } catch (error) {
-          console.error('Failed to fetch Convex profile:', error);
-          setProfile({
-            username: user.firstName ? (user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName) : '',
-            email: user.primaryEmailAddress?.emailAddress ?? '',
-            avatar: user.imageUrl ?? '',
-            id: user.id ?? '',
-          });
         }
+
+        // Set profile directly from Clerk user data
+        setProfile({
+          username: user.firstName ? (user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName) : '',
+          email: user.primaryEmailAddress?.emailAddress ?? '',
+          avatar: user.imageUrl ?? '',
+          id: user.id ?? '',
+        });
       } else {
         launchdarkly?.identify({
           anonymous: true,
