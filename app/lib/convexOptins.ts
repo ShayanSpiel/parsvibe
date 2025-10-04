@@ -7,22 +7,15 @@ type OptInToAccept = {
   message: string;
 };
 
-export async function fetchOptIns(
-  convex: ConvexReactClient
-): Promise<
-  | {
-      kind: 'loaded';
-      optIns: OptInToAccept[];
-    }
-  | {
-      kind: 'error';
-      error: string;
-    }
-  | {
-      kind: 'missingAuth';
-    }
-> {
-  // No optins needed - using single team setup with Clerk
+export async function fetchOptIns(convex: ConvexReactClient): Promise<{
+  kind: 'loaded';
+  optIns: OptInToAccept[];
+} | {
+  kind: 'error';
+  error: string;
+} | {
+  kind: 'missingAuth';
+}> {
   return {
     kind: 'loaded',
     optIns: [],
