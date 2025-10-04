@@ -244,38 +244,25 @@ export const saveCachedProfile = internalMutation({
 });
 
 export const updateCachedProfile = action({
-  args: {
-    convexAuthToken: v.string(),
-  },
+  args: { convexAuthToken: v.string() },
   handler: async (ctx, { convexAuthToken }) => {
-    const workosProfile = await ctx.auth.getUserIdentity();
-    if (!workosProfile) {
+    const clerkProfile = await ctx.auth.getUserIdentity();
+    if (!clerkProfile) {
       throw new ConvexError({ code: "NotAuthorized", message: "Unauthorized" });
     }
-
-    const url = `${process.env.BIG_BRAIN_HOST}/api/dashboard/profile`;
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${convexAuthToken}`,
-        "Content-Type": "application/json",
-      },
-    });
-    if (!response.ok) {
-      const body = await response.text();
-      throw new Error(`Failed to fetch profile: ${response.statusText}: ${body}`);
-    }
-
-    const convexProfile: ConvexProfile = await response.json();
-
+    
+    // Use Clerk profile data directly - no external API call needed
     const profile = {
-      username: convexProfile.name || workosProfile.name || workosProfile.nickname || "",
-      email: convexProfile.email || workosProfile.email || "",
-      avatar: workosProfile.pictureUrl || "",
-      id: convexProfile.id || workosProfile.subject || "",
+      username: clerkProfile.name || clerkProfile.nickname || clerkProfile.givenName || "",
+      email: clerkProfile.email || "",
+      avatar: clerkProfile.pictureUrl || "",
+      id: clerkProfile.subject || "",
     };
 
-    await ctx.runMutation(internal.sessions.saveCachedProfile, { profile });
+    await ctx.runMutation(internal.members.upsertMemberProfile, {
+      subject: clerkProfile.subject,
+      profile,
+    });
   },
 });
 
