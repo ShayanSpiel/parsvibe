@@ -9,7 +9,7 @@ type OptInToAccept = {
 
 export async function fetchOptIns(
   convex: ConvexReactClient
-): Promise
+): Promise<
   | {
       kind: 'loaded';
       optIns: OptInToAccept[];
