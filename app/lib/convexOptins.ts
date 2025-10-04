@@ -7,7 +7,9 @@ type OptInToAccept = {
   message: string;
 };
 
-export async function fetchOptIns(convex: ConvexReactClient): Promise
+export async function fetchOptIns(
+  convex: ConvexReactClient
+): Promise
   | {
       kind: 'loaded';
       optIns: OptInToAccept[];
